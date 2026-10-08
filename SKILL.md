@@ -82,7 +82,12 @@ For very long videos (>10 min, sparse mode): the budget already capped at 100 fr
 
 ### 3. Write the summary
 
-Output file: `<work-dir>/<slug>-notes.md` by default. If the user said "save notes somewhere permanent," ask where.
+Output file: `<notes-dir>/<slug>-notes.md`. Resolve `<notes-dir>` in this order:
+1. A location the user named in this request.
+2. `WATCH_NOTES_DIR` in `~/.config/watch/.env` (e.g. an Obsidian vault folder).
+3. The current working directory.
+
+Never write notes inside the work dir: step 4 deletes it.
 
 Structure the markdown like this:
 
@@ -117,7 +122,7 @@ Structure the markdown like this:
 
 ### 4. Clean up
 
-After the `.md` is written, delete the work dir (it contains the full downloaded video + frames, which is large). The script prints `Work dir: <path>` in the footer of its report; pass that path to `rm -rf`.
+After the `.md` is written to `<notes-dir>` (confirm the file exists outside the work dir), delete the work dir (it contains the full downloaded video + frames, which is large). The script prints `Work dir: <path>` in the footer of its report; pass that path to `rm -rf`.
 
 If the user specified a non-tmp `--out-dir`, ask before deleting.
 
