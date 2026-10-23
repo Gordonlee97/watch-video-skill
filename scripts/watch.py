@@ -22,6 +22,12 @@ from whisper import load_api_key, transcribe_video  # noqa: E402
 
 
 def main() -> int:
+    # The report is read by Claude via a pipe. On Windows a piped stdout defaults
+    # to the locale codepage (cp1252), which crashes on emoji/CJK titles.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
     ap = argparse.ArgumentParser(
         prog="watch",
         description="Download a video, extract auto-scaled frames, and surface the transcript.",

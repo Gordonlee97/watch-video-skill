@@ -57,6 +57,22 @@ def _pick_video(out_dir: Path) -> Path | None:
     return None
 
 
+def _read_info(info_path: Path, url: str) -> dict:
+    """Pull the fields we report from yt-dlp's info JSON (always UTF-8)."""
+    if not info_path.exists():
+        return {}
+    try:
+        raw = json.loads(info_path.read_text(encoding="utf-8"))
+        return {
+            "title": raw.get("title"),
+            "uploader": raw.get("uploader") or raw.get("channel"),
+            "duration": raw.get("duration"),
+            "url": raw.get("webpage_url") or url,
+        }
+    except Exception:
+        return {"url": url}
+
+
 def download_url(url: str, out_dir: Path) -> dict:
     if shutil.which("yt-dlp") is None:
         raise SystemExit("yt-dlp is not installed. Install with: brew install yt-dlp")
@@ -91,19 +107,7 @@ def download_url(url: str, out_dir: Path) -> dict:
         )
 
     subtitle = _pick_subtitle(out_dir)
-    info_path = out_dir / "video.info.json"
-    info: dict = {}
-    if info_path.exists():
-        try:
-            raw = json.loads(info_path.read_text())
-            info = {
-                "title": raw.get("title"),
-                "uploader": raw.get("uploader") or raw.get("channel"),
-                "duration": raw.get("duration"),
-                "url": raw.get("webpage_url") or url,
-            }
-        except Exception:
-            info = {"url": url}
+    info = _read_info(out_dir / "video.info.json", url)
 
     return {
         "video_path": str(video),

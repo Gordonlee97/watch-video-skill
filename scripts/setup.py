@@ -79,7 +79,8 @@ def _read_env_key(name: str) -> str | None:
         return None
     _check_file_permissions(CONFIG_FILE)
     try:
-        for line in CONFIG_FILE.read_text().splitlines():
+        # errors="replace": older runs wrote the template in the locale codepage.
+        for line in CONFIG_FILE.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
@@ -113,7 +114,7 @@ def _scaffold_env() -> bool:
     if CONFIG_FILE.exists():
         return False
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(ENV_TEMPLATE)
+    CONFIG_FILE.write_text(ENV_TEMPLATE, encoding="utf-8")
     try:
         CONFIG_FILE.chmod(0o600)
     except OSError:
@@ -130,15 +131,17 @@ def _write_setup_complete() -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     existing = ""
     if CONFIG_FILE.exists():
-        existing = CONFIG_FILE.read_text()
+        existing = CONFIG_FILE.read_text(encoding="utf-8", errors="replace")
         for line in existing.splitlines():
             if line.strip().startswith("SETUP_COMPLETE="):
                 return
-        if existing and not existing.endswith("\n"):
-            existing += "\n"
-        CONFIG_FILE.write_text(existing + "SETUP_COMPLETE=true\n")
+        # Append rather than rewrite, so a legacy-encoded file isn't re-encoded.
+        with CONFIG_FILE.open("a", encoding="utf-8") as f:
+            if existing and not existing.endswith("\n"):
+                f.write("\n")
+            f.write("SETUP_COMPLETE=true\n")
     else:
-        CONFIG_FILE.write_text(ENV_TEMPLATE + "\nSETUP_COMPLETE=true\n")
+        CONFIG_FILE.write_text(ENV_TEMPLATE + "\nSETUP_COMPLETE=true\n", encoding="utf-8")
     try:
         CONFIG_FILE.chmod(0o600)
     except OSError:
