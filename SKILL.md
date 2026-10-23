@@ -44,6 +44,7 @@ Flags worth knowing:
 - `--whisper groq|openai` — force a specific Whisper backend (default: prefer Groq if both keys exist).
 - `--no-whisper` — skip transcription entirely if no captions. Frames-only output.
 - `--out-dir DIR` — keep working files somewhere specific (default: an auto-generated tmp dir).
+- `--keep-video` — keep the downloaded video in the work dir. By default it is deleted as soon as frames and audio are extracted (a local source file is never deleted).
 
 Auto-fps budgets (full-video mode):
 - ≤30s → up to 30 frames
@@ -122,7 +123,7 @@ Structure the markdown like this:
 
 ### 4. Clean up
 
-After the `.md` is written to `<notes-dir>` (confirm the file exists outside the work dir), delete the work dir (it contains the full downloaded video + frames, which is large). The script prints `Work dir: <path>` in the footer of its report; pass that path to `rm -rf`.
+After the `.md` is written to `<notes-dir>` (confirm the file exists outside the work dir), delete the work dir (it holds the frames and captions; the downloaded video is already gone unless `--keep-video` was passed). The script prints `Work dir: <path>` in the footer of its report; pass that path to `rm -rf`.
 
 If the user specified a non-tmp `--out-dir`, ask before deleting.
 

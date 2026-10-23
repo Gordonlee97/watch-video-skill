@@ -15,7 +15,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from download import download, is_url  # noqa: E402
+from download import discard_download, download, is_url  # noqa: E402
 from frames import MAX_FPS, auto_fps, auto_fps_focus, extract, format_time, get_metadata, parse_time  # noqa: E402
 from transcribe import filter_range, format_transcript, parse_vtt  # noqa: E402
 from whisper import load_api_key, transcribe_video  # noqa: E402
@@ -49,6 +49,11 @@ def main() -> int:
         choices=["groq", "openai"],
         default=None,
         help="Force a specific Whisper backend. Default: prefer Groq, fall back to OpenAI.",
+    )
+    ap.add_argument(
+        "--keep-video",
+        action="store_true",
+        help="Keep the downloaded video in the work dir (default: delete it once frames and audio are extracted).",
     )
     args = ap.parse_args()
 
@@ -148,6 +153,11 @@ def main() -> int:
                 f"[watch] {hint} — run `python3 {setup_py}` to enable the Whisper fallback",
                 file=sys.stderr,
             )
+
+    # Frames and audio are extracted; the downloaded video is the bulk of the
+    # work dir, so drop it now rather than relying on later cleanup.
+    if not args.keep_video:
+        discard_download(dl)
 
     info = dl.get("info") or {}
 

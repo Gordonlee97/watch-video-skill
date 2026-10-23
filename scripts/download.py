@@ -117,6 +117,15 @@ def download_url(url: str, out_dir: Path) -> dict:
     }
 
 
+def discard_download(dl: dict) -> None:
+    """Delete a video this script downloaded, plus yt-dlp's info JSON (often
+    10+ MB; already parsed into dl["info"]). Never touches a user's local file."""
+    if dl.get("downloaded"):
+        video = Path(dl["video_path"])
+        video.unlink(missing_ok=True)
+        (video.parent / "video.info.json").unlink(missing_ok=True)
+
+
 def download(source: str, out_dir: Path) -> dict:
     if is_url(source):
         return download_url(source, out_dir)

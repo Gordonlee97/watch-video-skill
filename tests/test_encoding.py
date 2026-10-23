@@ -42,6 +42,7 @@ class ReportEncodingTest(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
             self.assertIn("clip \U0001f525.mp4", result.stdout.decode("utf-8"))
+            self.assertTrue(video.exists(), "a local source video must never be deleted")
 
 
 class ConfigEncodingTest(unittest.TestCase):
