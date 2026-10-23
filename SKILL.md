@@ -81,6 +81,16 @@ Read all the listed frame paths in a single message (parallel `Read` tool calls)
 
 For very long videos (>10 min, sparse mode): the budget already capped at 100 frames, so reading all of them is fine.
 
+### 2b. Zoom in where on-screen text matters
+
+Frames are 512px wide, which is too small to read slides, code, READMEs or UI text in a screen recording. When a frame shows text the notes depend on and you can't read it, re-extract a few seconds around that timestamp at higher resolution, into a subfolder of the work dir so step 4 cleans it up:
+
+```
+python scripts/watch.py "<source>" --start <t-2s> --end <t+2s> --resolution 1280 --max-frames 4 --out-dir "<work-dir>/zoom-<mm-ss>"
+```
+
+For a URL this downloads only that window. Do it for the handful of moments that matter, not every frame. Never put on-screen text in the notes that you could not actually read; if it stays illegible, say so or attribute the content to what was said.
+
 ### 3. Write the summary
 
 Output file: `<notes-dir>/<slug>-notes.md`. Resolve `<notes-dir>` in this order:
@@ -125,7 +135,7 @@ Structure the markdown like this:
 
 After the `.md` is written to `<notes-dir>` (confirm the file exists outside the work dir), delete the work dir (it holds the frames and captions; the downloaded video is already gone unless `--keep-video` was passed). The script prints `Work dir: <path>` in the footer of its report; pass that path to `rm -rf`.
 
-If the user specified a non-tmp `--out-dir`, ask before deleting.
+If the user specified a non-tmp `--out-dir`, ask before deleting. (Zoom-pass folders you created under the work dir are covered by the work dir's deletion.)
 
 ## Common gotchas
 
