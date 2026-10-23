@@ -126,15 +126,24 @@ python scripts/watch.py "<url-or-path>" [flags]
 ```
 
 Flags:
-- `--start T` and `--end T`. Focus on a section. Use `SS`, `MM:SS`, or `HH:MM:SS`.
+- `--start T` and `--end T`. Focus on a section. Use `SS`, `MM:SS`, or `HH:MM:SS`. For a URL, only that section is downloaded.
 - `--max-frames N`. Cap on frame count. Default 80, hard max 100.
 - `--resolution W`. Frame width in pixels. Default 512.
 - `--fps F`. Override auto-fps. Capped at 2 fps.
 - `--whisper groq|openai`. Force a specific Whisper backend.
 - `--no-whisper`. Disable the Whisper fallback. Returns frames only if there are no captions.
 - `--out-dir DIR`. Keep working files in a specific folder. Default is a temp folder.
+- `--keep-video`. Keep the downloaded video. By default it is deleted once frames and audio are extracted. A local file you point at is never deleted.
 
 The script prints a markdown report to stdout. The report lists every frame path, the transcript with timestamps, and the working folder.
+
+## Running the tests
+
+The tests use only the Python standard library. The frame and end-to-end tests also need ffmpeg on PATH and skip themselves without it.
+
+```bash
+python -m unittest discover -s tests
+```
 
 ## Troubleshooting
 
