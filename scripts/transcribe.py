@@ -26,6 +26,7 @@ def parse_vtt(path: str) -> list[dict]:
     lines = text.splitlines()
 
     segments: list[dict] = []
+    prev_cue_lines: list[str] = []
     i = 0
     while i < len(lines):
         match = TS_RE.match(lines[i])
@@ -43,6 +44,14 @@ def parse_vtt(path: str) -> list[dict]:
             if cleaned:
                 cue_lines.append(cleaned)
             i += 1
+
+        # YouTube auto-subs roll: each cue repeats the previous cue's last line
+        # above the new one. Keep only the new line(s).
+        raw_cue_lines = cue_lines
+        if len(cue_lines) > 1 and prev_cue_lines and cue_lines[0] == prev_cue_lines[-1]:
+            cue_lines = cue_lines[1:]
+        if raw_cue_lines:
+            prev_cue_lines = raw_cue_lines
 
         cue_text = " ".join(cue_lines).strip()
         if cue_text:
