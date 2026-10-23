@@ -147,7 +147,9 @@ def extract(
     for existing in out_dir.glob("frame_*.jpg"):
         existing.unlink()
 
-    output_pattern = str(out_dir / "frame_%04d.jpg")
+    # Filenames carry each frame's pts (its index on the fps grid), so timestamps
+    # stay correct after mpdecimate drops near-duplicate frames.
+    output_pattern = str(out_dir / "frame_%06d.jpg")
     cmd: list[str] = [
         "ffmpeg",
         "-hide_banner",
@@ -163,7 +165,11 @@ def extract(
 
     cmd += [
         "-i", video_path,
-        "-vf", f"fps={fps},scale={resolution}:-2",
+        # mpdecimate (default thresholds) drops only frames nearly identical to
+        # the last kept one: static slides, paused screens. Any real change survives.
+        "-vf", f"fps={fps},mpdecimate,scale={resolution}:-2",
+        "-fps_mode", "passthrough",
+        "-frame_pts", "1",
         "-frames:v", str(max_frames),
         "-q:v", "4",
         output_pattern,
@@ -174,11 +180,11 @@ def extract(
         raise SystemExit(f"ffmpeg frame extraction failed: {result.stderr.strip()}")
 
     offset = start_seconds or 0.0
-    frames = sorted(out_dir.glob("frame_*.jpg"))
+    frames = sorted(out_dir.glob("frame_*.jpg"), key=lambda p: int(p.stem.split("_")[1]))
     return [
         {
             "index": i,
-            "timestamp_seconds": round(offset + (i / fps if fps > 0 else 0.0), 2),
+            "timestamp_seconds": round(offset + (int(p.stem.split("_")[1]) / fps if fps > 0 else 0.0), 2),
             "path": str(p),
         }
         for i, p in enumerate(frames)
