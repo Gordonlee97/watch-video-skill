@@ -98,17 +98,24 @@ Output file: `<notes-dir>/<slug>-notes.md`. Resolve `<notes-dir>` in this order:
 2. `WATCH_NOTES_DIR` in `~/.config/watch/.env` (e.g. an Obsidian vault folder).
 3. The current working directory.
 
-Never write notes inside the work dir: step 4 deletes it.
+Never write notes inside the work dir: step 4 deletes it. If `<slug>-notes.md` already exists, don't overwrite it: write `<slug>-notes-2.md` (next free number) and tell the user.
 
-Structure the markdown like this:
+**Timestamps:** for a YouTube source, write every timestamp as a link that opens the video at that moment, e.g. [`04:36`](https://www.youtube.com/watch?v=ID&t=276s) (use `?t=` instead of `&t=` when the URL has no `?`, as with `youtu.be/ID`). For a local file, use plain `[04:36]`.
+
+Structure the markdown like this. The YAML frontmatter at the top becomes searchable properties in Obsidian (and Dataview), and renders as a small table on GitHub:
 
 ```markdown
-# <Title>
+---
+title: "<Title>"
+source: <URL or local path>
+uploader: <if from YouTube; omit the line otherwise>
+duration: "<mm:ss>"
+transcript: <captions / whisper (groq) / whisper (openai) / none>
+watched: <YYYY-MM-DD>
+tags: [video-notes]
+---
 
-**Source:** <URL or local path>
-**Duration:** <mm:ss>
-**Uploader:** <if from YouTube>
-**Transcript source:** <captions / whisper (groq) / whisper (openai) / none>
+# <Title>
 
 ## One-line summary
 <≤20 words — the core claim or hook of the video>
@@ -117,12 +124,12 @@ Structure the markdown like this:
 <3–5 bullet points capturing the main arguments, moments, or beats>
 
 ## Timeline
-- **[00:00]** <what's happening visually + the key line being said>
-- **[00:15]** ...
+- **[`00:00`](<url>&t=0s)** <what's happening visually + the key line being said>
+- **[`00:15`](<url>&t=15s)** ...
 <one row per meaningful beat, not per frame>
 
 ## Key quotes
-> "<verbatim quote>" — [mm:ss]
+> "<verbatim quote>" — [`mm:ss`](<url>&t=<seconds>s)
 
 ## Visual notes
 <what the video shows that the transcript alone would miss — setting, B-roll, on-screen text, graphics, transitions, subject's emotion>
