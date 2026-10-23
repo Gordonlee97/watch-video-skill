@@ -24,6 +24,8 @@ import uuid
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from setup import setup_command
+
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
 GROQ_MODEL = "whisper-large-v3"
@@ -85,7 +87,7 @@ def load_api_key(preferred: str | None = None) -> tuple[str, str] | tuple[None, 
 def extract_audio(video_path: str, out_path: Path) -> Path:
     """Extract mono 16kHz 64kbps mp3 — ~480 kB/min, fits any Whisper limit."""
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit(f"ffmpeg is not installed. Run `{setup_command()}` to install it or see how.")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -277,11 +279,10 @@ def transcribe_video(
         api_key = api_key or detected_key
 
     if not backend or not api_key:
-        setup_py = Path(__file__).resolve().parent / "setup.py"
         raise SystemExit(
             "No Whisper API key available. Set GROQ_API_KEY (preferred) or OPENAI_API_KEY "
             "in the environment or in ~/.config/watch/.env. "
-            f"Run `python3 {setup_py}` to configure."
+            f"Run `{setup_command()}` to configure."
         )
 
     print(f"[watch] extracting audio for Whisper ({backend})…", file=sys.stderr)

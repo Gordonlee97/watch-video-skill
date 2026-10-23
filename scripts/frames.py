@@ -14,6 +14,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from setup import setup_command
+
 
 MAX_FPS = 2.0
 
@@ -57,7 +59,7 @@ def format_time(seconds: float) -> str:
 
 def get_metadata(video_path: str) -> dict:
     if shutil.which("ffprobe") is None:
-        raise SystemExit("ffprobe is not installed. Install with: brew install ffmpeg")
+        raise SystemExit(f"ffprobe is not installed. Run `{setup_command()}` to install it or see how.")
 
     result = subprocess.run(
         [
@@ -144,7 +146,7 @@ def extract(
     """`time_offset` is added to every timestamp: the source time of the input's
     first frame when the input is a clip cut from a longer video."""
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit(f"ffmpeg is not installed. Run `{setup_command()}` to install it or see how.")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for existing in out_dir.glob("frame_*.jpg"):

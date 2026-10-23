@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+from setup import setup_command
+
 
 VIDEO_EXTS = {".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".flv", ".wmv"}
 
@@ -83,7 +85,7 @@ def download_url(
     the result's `clip_start` is then the source time of the clip's first frame.
     Falls back to the whole video if the section download yields nothing."""
     if shutil.which("yt-dlp") is None:
-        raise SystemExit("yt-dlp is not installed. Install with: brew install yt-dlp")
+        raise SystemExit(f"yt-dlp is not installed. Run `{setup_command()}` to install it or see how.")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 

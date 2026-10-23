@@ -57,8 +57,19 @@ def _check_binaries() -> list[str]:
     return [b for b in REQUIRED_BINARIES if not _which(b)]
 
 
+def setup_command() -> str:
+    """The command that runs this installer, spelled for the current OS."""
+    python = "python" if os.name == "nt" else "python3"
+    path = str(Path(__file__).resolve())
+    return f'{python} "{path}"' if " " in path else f"{python} {path}"
+
+
 def _check_file_permissions(path: Path) -> None:
     """Warn to stderr if a secrets file is world/group readable."""
+    if os.name == "nt":
+        # Windows reports every writable file as 0o666 and chmod can't change
+        # that, so the warning would fire on every read with no fix available.
+        return
     try:
         mode = path.stat().st_mode
         if mode & 0o044:
@@ -242,10 +253,9 @@ def cmd_check() -> int:
         parts.append(f"missing binaries: {', '.join(s['missing_binaries'])}")
     if not s["has_api_key"]:
         parts.append("no Whisper API key (GROQ_API_KEY or OPENAI_API_KEY)")
-    installer = Path(__file__).resolve()
     sys.stderr.write(
         f"[watch] setup incomplete ({'; '.join(parts)}). "
-        f"Run: python3 {installer}\n"
+        f"Run: {setup_command()}\n"
     )
     sys.stderr.flush()
 

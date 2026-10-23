@@ -18,6 +18,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from download import discard_download, download, is_url  # noqa: E402
 from frames import MAX_FPS, auto_fps, auto_fps_focus, extract, format_time, get_metadata, parse_time  # noqa: E402
 from transcribe import filter_range, format_transcript, parse_vtt, shift_segments  # noqa: E402
+from setup import setup_command  # noqa: E402
 from whisper import load_api_key, transcribe_video  # noqa: E402
 
 
@@ -158,9 +159,8 @@ def main() -> int:
                 if args.whisper else
                 "no subtitles and no Whisper API key found"
             )
-            setup_py = SCRIPT_DIR / "setup.py"
             print(
-                f"[watch] {hint} — run `python3 {setup_py}` to enable the Whisper fallback",
+                f"[watch] {hint} — run `{setup_command()}` to enable the Whisper fallback",
                 file=sys.stderr,
             )
 
@@ -237,12 +237,11 @@ def main() -> int:
     elif focused and dl.get("subtitle_path"):
         print(f"_No transcript lines fell inside {format_time(effective_start)} → {format_time(effective_end)}._")
     else:
-        setup_py = SCRIPT_DIR / "setup.py"
         print(
             "_No transcript available — proceed with frames only. "
             "Captions were missing and the Whisper fallback was unavailable "
             "(no API key set, or `--no-whisper` was used). "
-            f"Run `python3 {setup_py}` to enable Whisper, then re-run._"
+            f"Run `{setup_command()}` to enable Whisper, then re-run._"
         )
 
     print()
