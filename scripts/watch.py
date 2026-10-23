@@ -17,7 +17,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from download import discard_download, download, is_url  # noqa: E402
 from frames import MAX_FPS, auto_fps, auto_fps_focus, extract, format_time, get_metadata, parse_time  # noqa: E402
-from transcribe import filter_range, format_transcript, parse_vtt  # noqa: E402
+from transcribe import filter_range, format_transcript, parse_vtt, shift_segments  # noqa: E402
 from whisper import load_api_key, transcribe_video  # noqa: E402
 
 
@@ -66,16 +66,6 @@ def main() -> int:
     work.mkdir(parents=True, exist_ok=True)
     print(f"[watch] working dir: {work}", file=sys.stderr)
 
-    print(
-        "[watch] downloading via yt-dlp…" if is_url(args.source) else "[watch] using local file…",
-        file=sys.stderr,
-    )
-    dl = download(args.source, work / "download")
-    video_path = dl["video_path"]
-
-    meta = get_metadata(video_path)
-    full_duration = meta["duration_seconds"]
-
     start_sec = parse_time(args.start)
     end_sec = parse_time(args.end)
 
@@ -83,13 +73,30 @@ def main() -> int:
         raise SystemExit("--start must be non-negative")
     if end_sec is not None and start_sec is not None and end_sec <= start_sec:
         raise SystemExit("--end must be greater than --start")
+
+    focused = start_sec is not None or end_sec is not None
+
+    print(
+        "[watch] downloading via yt-dlp…" if is_url(args.source) else "[watch] using local file…",
+        file=sys.stderr,
+    )
+    dl = download(args.source, work / "download", section=(start_sec, end_sec) if focused else None)
+    video_path = dl["video_path"]
+    # Set when only the requested range was downloaded: the clip's first frame
+    # is at this source time, so no seeking is needed and timestamps are offset.
+    clip_start = dl.get("clip_start")
+
+    meta = get_metadata(video_path)
+    full_duration = meta["duration_seconds"]
+    if clip_start is not None:
+        full_duration = float((dl.get("info") or {}).get("duration") or clip_start + full_duration)
+
     if full_duration > 0 and start_sec is not None and start_sec >= full_duration:
         raise SystemExit(f"--start {start_sec:.1f}s is past end of video ({full_duration:.1f}s)")
 
     effective_start = start_sec if start_sec is not None else 0.0
     effective_end = end_sec if end_sec is not None else full_duration
     effective_duration = max(0.0, effective_end - effective_start)
-    focused = start_sec is not None or end_sec is not None
 
     if focused:
         fps, target = auto_fps_focus(effective_duration, max_frames=max_frames)
@@ -111,8 +118,9 @@ def main() -> int:
         fps=fps,
         resolution=args.resolution,
         max_frames=max_frames,
-        start_seconds=start_sec,
-        end_seconds=end_sec,
+        start_seconds=start_sec if clip_start is None else None,
+        end_seconds=end_sec if clip_start is None else None,
+        time_offset=clip_start or 0.0,
     )
 
     transcript_segments: list[dict] = []
@@ -137,6 +145,8 @@ def main() -> int:
                     backend=backend,
                     api_key=api_key,
                 )
+                if clip_start is not None:
+                    all_segments = shift_segments(all_segments, clip_start)
                 transcript_segments = filter_range(all_segments, start_sec, end_sec) if focused else all_segments
                 transcript_text = format_transcript(transcript_segments)
                 transcript_source = f"whisper ({used_backend})"

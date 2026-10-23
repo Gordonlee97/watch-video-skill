@@ -44,6 +44,11 @@ class ExtractTest(unittest.TestCase):
         frames = extract(str(self._red_then_blue()), self.tmp / "out", fps=1.0, resolution=160, start_seconds=3.0)
         self.assertEqual([f["timestamp_seconds"] for f in frames], [3.0, 6.0])
 
+    def test_time_offset_maps_clip_frames_to_source_time(self):
+        # A section-downloaded clip starts at source time `time_offset`.
+        frames = extract(str(self._red_then_blue()), self.tmp / "out", fps=1.0, resolution=160, time_offset=270.0)
+        self.assertEqual([f["timestamp_seconds"] for f in frames], [270.0, 276.0])
+
     def test_changing_frames_are_all_kept(self):
         video = self.tmp / "moving.mp4"
         _make_video(video, "testsrc=duration=5:size=160x120:rate=10")

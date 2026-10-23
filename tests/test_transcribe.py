@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from transcribe import parse_vtt  # noqa: E402
+from transcribe import parse_vtt, shift_segments  # noqa: E402
 
 # Same shape as YouTube auto-captions: each cue repeats the previous cue's line
 # above the new one, separated by 10ms cues that hold only the repeated line.
@@ -71,6 +71,15 @@ class ParseVttTest(unittest.TestCase):
         self.assertEqual(
             [s["text"] for s in segments],
             ["Hello there General Kenobi", "You are a bold one", "a bold one"],
+        )
+
+
+class ShiftSegmentsTest(unittest.TestCase):
+    def test_clip_relative_whisper_segments_become_absolute(self):
+        segments = [{"start": 0.0, "end": 2.5, "text": "a"}, {"start": 2.5, "end": 4.0, "text": "b"}]
+        self.assertEqual(
+            shift_segments(segments, 270.0),
+            [{"start": 270.0, "end": 272.5, "text": "a"}, {"start": 272.5, "end": 274.0, "text": "b"}],
         )
 
 

@@ -89,6 +89,14 @@ def filter_range(
     return [seg for seg in segments if seg["end"] >= lo and seg["start"] <= hi]
 
 
+def shift_segments(segments: list[dict], offset: float) -> list[dict]:
+    """Move clip-relative segments (e.g. Whisper on a section clip) to source time."""
+    return [
+        {**seg, "start": round(seg["start"] + offset, 2), "end": round(seg["end"] + offset, 2)}
+        for seg in segments
+    ]
+
+
 def format_transcript(segments: list[dict]) -> str:
     lines = []
     for seg in segments:

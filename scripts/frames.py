@@ -139,7 +139,10 @@ def extract(
     max_frames: int = 100,
     start_seconds: float | None = None,
     end_seconds: float | None = None,
+    time_offset: float = 0.0,
 ) -> list[dict]:
+    """`time_offset` is added to every timestamp: the source time of the input's
+    first frame when the input is a clip cut from a longer video."""
     if shutil.which("ffmpeg") is None:
         raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
 
@@ -179,7 +182,7 @@ def extract(
     if result.returncode != 0:
         raise SystemExit(f"ffmpeg frame extraction failed: {result.stderr.strip()}")
 
-    offset = start_seconds or 0.0
+    offset = (start_seconds or 0.0) + time_offset
     frames = sorted(out_dir.glob("frame_*.jpg"), key=lambda p: int(p.stem.split("_")[1]))
     return [
         {

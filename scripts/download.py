@@ -36,6 +36,7 @@ def resolve_local(path: str) -> dict:
         "subtitle_path": None,
         "info": {"title": p.name, "url": str(p)},
         "downloaded": False,
+        "clip_start": None,
     }
 
 
@@ -73,33 +74,36 @@ def _read_info(info_path: Path, url: str) -> dict:
         return {"url": url}
 
 
-def download_url(url: str, out_dir: Path) -> dict:
+def download_url(
+    url: str,
+    out_dir: Path,
+    section: tuple[float | None, float | None] | None = None,
+) -> dict:
+    """Download `url`. With `section=(start, end)`, fetch only that time range;
+    the result's `clip_start` is then the source time of the clip's first frame.
+    Falls back to the whole video if the section download yields nothing."""
     if shutil.which("yt-dlp") is None:
         raise SystemExit("yt-dlp is not installed. Install with: brew install yt-dlp")
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    output_template = str(out_dir / "video.%(ext)s")
 
-    cmd = [
-        "yt-dlp",
-        "-N", "8",
-        "-f", "bv*[height<=720]+ba/b[height<=720]/bv+ba/b",
-        "--merge-output-format", "mp4",
-        "--write-info-json",
-        "--write-subs",
-        "--write-auto-subs",
-        "--sub-langs", "en,en-US,en-GB,en-orig",
-        "--sub-format", "vtt",
-        "--convert-subs", "vtt",
-        "--no-playlist",
-        "--ignore-errors",
-        "-o", output_template,
-        url,
-    ]
+    clip_start = None
+    if section is not None:
+        start, end = section
+        start = start or 0.0
+        spec = f"*{start}-{end if end is not None else 'inf'}"
+        print(f"[watch] downloading only the section {spec[1:]} (seconds)", file=sys.stderr)
+        result = _run_yt_dlp(url, out_dir, ["--download-sections", spec])
+        if _pick_video(out_dir) is not None:
+            clip_start = start
+        else:
+            print(
+                f"[watch] section download failed (exit {result.returncode}); downloading the full video",
+                file=sys.stderr,
+            )
+    if clip_start is None:
+        result = _run_yt_dlp(url, out_dir, [])
 
-    # yt-dlp may exit non-zero if a subtitle variant fails (e.g. 429) even when
-    # the video itself downloaded fine. Treat "video file present" as success.
-    result = subprocess.run(cmd, stdout=sys.stderr, stderr=sys.stderr)
     video = _pick_video(out_dir)
     if video is None:
         raise SystemExit(
@@ -114,7 +118,33 @@ def download_url(url: str, out_dir: Path) -> dict:
         "subtitle_path": str(subtitle) if subtitle else None,
         "info": info or {"url": url},
         "downloaded": True,
+        "clip_start": clip_start,
     }
+
+
+def _run_yt_dlp(url: str, out_dir: Path, extra_args: list[str]):
+    output_template = str(out_dir / "video.%(ext)s")
+    cmd = [
+        "yt-dlp",
+        "-N", "8",
+        "-f", "bv*[height<=720]+ba/b[height<=720]/bv+ba/b",
+        "--merge-output-format", "mp4",
+        "--write-info-json",
+        "--write-subs",
+        "--write-auto-subs",
+        "--sub-langs", "en,en-US,en-GB,en-orig",
+        "--sub-format", "vtt",
+        "--convert-subs", "vtt",
+        "--no-playlist",
+        "--ignore-errors",
+        *extra_args,
+        "-o", output_template,
+        url,
+    ]
+
+    # yt-dlp may exit non-zero if a subtitle variant fails (e.g. 429) even when
+    # the video itself downloaded fine. Callers treat "video file present" as success.
+    return subprocess.run(cmd, stdout=sys.stderr, stderr=sys.stderr)
 
 
 def discard_download(dl: dict) -> None:
@@ -126,9 +156,13 @@ def discard_download(dl: dict) -> None:
         (video.parent / "video.info.json").unlink(missing_ok=True)
 
 
-def download(source: str, out_dir: Path) -> dict:
+def download(
+    source: str,
+    out_dir: Path,
+    section: tuple[float | None, float | None] | None = None,
+) -> dict:
     if is_url(source):
-        return download_url(source, out_dir)
+        return download_url(source, out_dir, section=section)
     return resolve_local(source)
 
 
